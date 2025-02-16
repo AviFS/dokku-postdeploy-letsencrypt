@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
+
+# Runs letsencrypt after deploy if not already set
+auto_letsencrypt() {
+  local APP="$1"
+  if [[ "$(dokku letsencrypt:active $APP)" ==  "false" ]]; then
+    echo "Running 'dokku letsencrypt' for $APP..."
+    local PORT=$(docker ps --filter "name=test" --format "{{.Ports}}" | cut -d'/' -f1)
+    dokku ports:add "$APP" "http:80:$PORT"
+    dokku letsencrypt:enable "$APP"
+    dokku letsencrypt:cron-job --enable
+  fi
+}
+
+auto_letsencrypt "$@"
